@@ -125,9 +125,11 @@ function GamePage({
                     {lastThrows.length === 0 ? (
                       <small>None</small>
                     ) : (
-                      lastThrows.map((points, throwIndex) => (
-                        <strong key={`${player.id}-${throwIndex}`}>{points}</strong>
-                      ))
+                      lastThrows.map((points, throwIndex) => {
+                          if(points <= 0) return <strong key={`${player.id}-${throwIndex}`} id='zero'>{points}</strong>
+                          return <strong key={`${player.id}-${throwIndex}`}>{points}</strong>
+                        }
+                      )
                     )}
                   </div>
                 </div>

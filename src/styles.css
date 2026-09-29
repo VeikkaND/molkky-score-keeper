@@ -497,6 +497,10 @@ input[type='checkbox'] {
   font-weight: 900;
 }
 
+.last-throws #zero {
+  background: rgb(255, 70, 70);
+}
+
 .last-throws small {
   color: var(--muted);
 }
