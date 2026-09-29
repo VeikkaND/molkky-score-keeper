@@ -8,4 +8,6 @@ export type Turn = {
   points: number
   previousTotal: number
   round: number
+  previousEliminatedPlayerIds: string[]
+  previousWinner: string | null
 }

@@ -12,6 +12,8 @@ function App() {
   const [round, setRound] = useState(1)
   const [turns, setTurns] = useState<Turn[]>([])
   const [winner, setWinner] = useState<string | null>(null)
+  const [eliminatedPlayerIds, setEliminatedPlayerIds] = useState<string[]>([])
+  const [threeMissesEliminates, setThreeMissesEliminates] = useState(true)
 
   const currentPlayer = players[activePlayer]
   const canStart = players.length >= 2
@@ -50,6 +52,18 @@ function App() {
     })
   }
 
+  const getNextActivePlayer = (fromIndex: number, eliminatedIds: string[]) => {
+    for (let offset = 1; offset <= players.length; offset += 1) {
+      const nextIndex = (fromIndex + offset) % players.length
+
+      if (!eliminatedIds.includes(players[nextIndex].id)) {
+        return nextIndex
+      }
+    }
+
+    return fromIndex
+  }
+
   const startGame = () => {
     if (!canStart) {
       return
@@ -60,6 +74,7 @@ function App() {
     setRound(1)
     setTurns([])
     setWinner(null)
+    setEliminatedPlayerIds([])
     setStage('game')
   }
 
@@ -72,10 +87,12 @@ function App() {
     setRound(1)
     setTurns([])
     setWinner(null)
+    setEliminatedPlayerIds([])
+    setThreeMissesEliminates(true)
   }
 
   const recordScore = (points: number) => {
-    if (!currentPlayer || winner) {
+    if (!currentPlayer || winner || eliminatedPlayerIds.includes(currentPlayer.id)) {
       return
     }
 
@@ -83,12 +100,33 @@ function App() {
     const attemptedTotal = previousTotal + points
     const nextTotal = attemptedTotal > 50 ? 25 : attemptedTotal
     const nextScores = scores.map((score, index) => (index === activePlayer ? nextTotal : score))
-    const nextPlayer = (activePlayer + 1) % players.length
+    const lastTwoPlayerThrows = turns
+      .filter((turn) => turn.playerIndex === activePlayer)
+      .slice(-2)
+      .map((turn) => turn.points)
+    const isThirdMiss =
+      threeMissesEliminates &&
+      points === 0 &&
+      lastTwoPlayerThrows.length === 2 &&
+      lastTwoPlayerThrows.every((throwScore) => throwScore === 0)
+    const nextEliminatedPlayerIds =
+      isThirdMiss && !eliminatedPlayerIds.includes(currentPlayer.id)
+        ? [...eliminatedPlayerIds, currentPlayer.id]
+        : eliminatedPlayerIds
+    const remainingPlayers = players.filter((player) => !nextEliminatedPlayerIds.includes(player.id))
 
     setScores(nextScores)
+    setEliminatedPlayerIds(nextEliminatedPlayerIds)
     setTurns((currentTurns) => [
       ...currentTurns,
-      { playerIndex: activePlayer, points, previousTotal, round },
+      {
+        playerIndex: activePlayer,
+        points,
+        previousTotal,
+        round,
+        previousEliminatedPlayerIds: eliminatedPlayerIds,
+        previousWinner: winner,
+      },
     ])
 
     if (nextTotal === 50) {
@@ -96,8 +134,15 @@ function App() {
       return
     }
 
+    if (isThirdMiss && remainingPlayers.length === 1) {
+      setWinner(remainingPlayers[0].name)
+      return
+    }
+
+    const nextPlayer = getNextActivePlayer(activePlayer, nextEliminatedPlayerIds)
+
     setActivePlayer(nextPlayer)
-    if (nextPlayer === 0) {
+    if (nextPlayer <= activePlayer) {
       setRound((currentRound) => currentRound + 1)
     }
   }
@@ -116,7 +161,8 @@ function App() {
     )
     setActivePlayer(lastTurn.playerIndex)
     setRound(lastTurn.round)
-    setWinner(null)
+    setEliminatedPlayerIds(lastTurn.previousEliminatedPlayerIds)
+    setWinner(lastTurn.previousWinner)
     setTurns((currentTurns) => currentTurns.slice(0, -1))
   }
 
@@ -125,6 +171,15 @@ function App() {
     setScores([])
     setTurns([])
     setWinner(null)
+    setEliminatedPlayerIds([])
+  }
+
+  const updateThreeMissesSetting = (enabled: boolean) => {
+    setThreeMissesEliminates(enabled)
+
+    if (!enabled) {
+      setEliminatedPlayerIds([])
+    }
   }
 
   if (stage === 'setup') {
@@ -150,11 +205,14 @@ function App() {
       round={round}
       turns={turns}
       winner={winner}
+      eliminatedPlayerIds={eliminatedPlayerIds}
+      threeMissesEliminates={threeMissesEliminates}
       currentPlayer={currentPlayer}
       onEditPlayers={editPlayers}
       onResetGame={resetGame}
       onRecordScore={recordScore}
       onUndoTurn={undoTurn}
+      onThreeMissesEliminatesChange={updateThreeMissesSetting}
     />
   )
 }

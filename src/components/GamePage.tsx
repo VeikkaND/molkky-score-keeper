@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { ArrowLeft, RotateCcw, Trophy, Undo2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ArrowLeft, RotateCcw, Settings2, Trophy, Undo2 } from 'lucide-react'
 import type { Player, Turn } from '../types'
 
 type GamePageProps = {
@@ -9,11 +9,14 @@ type GamePageProps = {
   round: number
   turns: Turn[]
   winner: string | null
+  eliminatedPlayerIds: string[]
+  threeMissesEliminates: boolean
   currentPlayer?: Player
   onEditPlayers: () => void
   onResetGame: () => void
   onRecordScore: (points: number) => void
   onUndoTurn: () => void
+  onThreeMissesEliminatesChange: (enabled: boolean) => void
 }
 
 const pointOptions = Array.from({ length: 13 }, (_, index) => index)
@@ -25,18 +28,39 @@ function GamePage({
   round,
   turns,
   winner,
+  eliminatedPlayerIds,
+  threeMissesEliminates,
   currentPlayer,
   onEditPlayers,
   onResetGame,
   onRecordScore,
   onUndoTurn,
+  onThreeMissesEliminatesChange,
 }: GamePageProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
   const rankedPlayers = useMemo(
     () =>
       players
-        .map((player, index) => ({ ...player, score: scores[index] ?? 0, originalIndex: index }))
-        .sort((a, b) => b.score - a.score),
-    [players, scores],
+        .map((player, index) => ({
+          ...player,
+          score: scores[index] ?? 0,
+          originalIndex: index,
+          isEliminated: eliminatedPlayerIds.includes(player.id),
+        }))
+        .sort((a, b) => Number(a.isEliminated) - Number(b.isEliminated) || b.score - a.score),
+    [eliminatedPlayerIds, players, scores],
+  )
+
+  const lastThrowsByPlayer = useMemo(
+    () =>
+      players.map((_, playerIndex) =>
+        turns
+          .filter((turn) => turn.playerIndex === playerIndex)
+          .slice(-2)
+          .map((turn) => turn.points),
+      ),
+    [players, turns],
   )
 
   return (
@@ -74,19 +98,38 @@ function GamePage({
       <div className="game-grid">
         <section className="scoreboard" aria-label="Scoreboard">
           {rankedPlayers.map((player, index) => {
-            const isActive = player.originalIndex === activePlayer && !winner
+            const isActive = player.originalIndex === activePlayer && !winner && !player.isEliminated
             const distance = 50 - player.score
+            const lastThrows = lastThrowsByPlayer[player.originalIndex] ?? []
 
             return (
-              <article className={`player-card ${isActive ? 'active' : ''}`} key={player.id}>
+              <article
+                className={`player-card ${isActive ? 'active' : ''} ${
+                  player.isEliminated ? 'eliminated' : ''
+                }`}
+                key={player.id}
+              >
                 <div className="rank-badge">#{index + 1}</div>
                 <div className="player-card-name">
                   <span>{player.name}</span>
                   {isActive && <small>turn</small>}
+                  {player.isEliminated && <small>out</small>}
                 </div>
                 <div className="score-value">{player.score}</div>
                 <div className="distance-line">
-                  {player.score === 50 ? 'winner' : `${distance} to go`}
+                  {player.isEliminated ? 'three misses' : player.score === 50 ? 'winner' : `${distance} to go`}
+                </div>
+                <div className="last-throws">
+                  <span>Last throws</span>
+                  <div>
+                    {lastThrows.length === 0 ? (
+                      <small>None</small>
+                    ) : (
+                      lastThrows.map((points, throwIndex) => (
+                        <strong key={`${player.id}-${throwIndex}`}>{points}</strong>
+                      ))
+                    )}
+                  </div>
                 </div>
               </article>
             )
@@ -96,17 +139,42 @@ function GamePage({
         <section className="scoring-panel" aria-label="Add score">
           <div className="panel-topline">
             <span>Add throw score</span>
-            <button
-              className="icon-button ghost-button"
-              type="button"
-              onClick={onUndoTurn}
-              disabled={turns.length === 0}
-              aria-label="Undo last score"
-              title="Undo last score"
-            >
-              <Undo2 size={20} aria-hidden="true" />
-            </button>
+            <div className="panel-actions">
+              <button
+                className="icon-button ghost-button"
+                type="button"
+                onClick={onUndoTurn}
+                disabled={turns.length === 0}
+                aria-label="Undo last score"
+                title="Undo last score"
+              >
+                <Undo2 size={20} aria-hidden="true" />
+              </button>
+              <button
+                className="icon-button ghost-button"
+                type="button"
+                onClick={() => setIsSettingsOpen((isOpen) => !isOpen)}
+                aria-expanded={isSettingsOpen}
+                aria-label="Open game settings"
+                title="Settings"
+              >
+                <Settings2 size={20} aria-hidden="true" />
+              </button>
+            </div>
           </div>
+
+          {isSettingsOpen && (
+            <div className="settings-menu">
+              <label className="setting-toggle">
+                <input
+                  type="checkbox"
+                  checked={threeMissesEliminates}
+                  onChange={(event) => onThreeMissesEliminatesChange(event.target.checked)}
+                />
+                <span>Three misses in a row knocks a player out</span>
+              </label>
+            </div>
+          )}
 
           <div className="score-pad">
             {pointOptions.map((points) => (

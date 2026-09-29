@@ -141,6 +141,13 @@ input:focus {
   box-shadow: 0 0 0 4px rgba(33, 91, 77, 0.12);
 }
 
+input[type='checkbox'] {
+  width: 18px;
+  min-height: 18px;
+  accent-color: var(--forest);
+  box-shadow: none;
+}
+
 .icon-button,
 .tool-button,
 .primary-action,
@@ -413,6 +420,15 @@ input:focus {
   box-shadow: 0 16px 42px rgba(201, 95, 56, 0.18);
 }
 
+.player-card.eliminated {
+  background: rgba(255, 255, 255, 0.68);
+  opacity: 0.68;
+}
+
+.player-card.eliminated .score-value {
+  color: var(--muted);
+}
+
 .player-card-name {
   min-width: 0;
 }
@@ -446,6 +462,45 @@ input:focus {
   font-weight: 800;
 }
 
+.last-throws {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.last-throws > span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.last-throws div {
+  display: flex;
+  gap: 6px;
+}
+
+.last-throws strong,
+.last-throws small {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(22, 61, 52, 0.08);
+  color: var(--forest);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.last-throws small {
+  color: var(--muted);
+}
+
 .scoring-panel {
   position: sticky;
   top: 16px;
@@ -458,6 +513,28 @@ input:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-menu {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.setting-toggle {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: start;
+  gap: 10px;
+  color: var(--forest);
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 .score-pad {
