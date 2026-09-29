@@ -228,7 +228,51 @@ input:focus {
 }
 
 .setup-player-list li {
-  grid-template-columns: 34px 1fr 42px;
+  grid-template-columns: 28px 34px minmax(0, 1fr) auto 42px;
+  cursor: grab;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.setup-player-list li:active {
+  cursor: grabbing;
+}
+
+.setup-player-list li.is-dragging {
+  opacity: 0.52;
+  transform: scale(0.99);
+}
+
+.setup-player-list li.is-drag-over {
+  border-color: rgba(201, 95, 56, 0.58);
+  box-shadow: 0 8px 22px rgba(201, 95, 56, 0.14);
+}
+
+.drag-handle {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  touch-action: none;
+}
+
+.setup-player-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.order-actions .icon-button {
+  width: 34px;
+  min-height: 34px;
 }
 
 .player-index,
@@ -540,6 +584,14 @@ input:focus {
 }
 
 @media (max-width: 380px) {
+  .setup-player-list li {
+    grid-template-columns: 24px 30px minmax(0, 1fr) 42px;
+  }
+
+  .order-actions {
+    grid-column: 3 / -1;
+  }
+
   .score-pad {
     gap: 6px;
   }

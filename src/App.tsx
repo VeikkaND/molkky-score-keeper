@@ -31,6 +31,25 @@ function App() {
     setPlayers((currentPlayers) => currentPlayers.filter((player) => player.id !== id))
   }
 
+  const reorderPlayers = (fromIndex: number, toIndex: number) => {
+    setPlayers((currentPlayers) => {
+      if (
+        fromIndex === toIndex ||
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= currentPlayers.length ||
+        toIndex >= currentPlayers.length
+      ) {
+        return currentPlayers
+      }
+
+      const nextPlayers = [...currentPlayers]
+      const [movedPlayer] = nextPlayers.splice(fromIndex, 1)
+      nextPlayers.splice(toIndex, 0, movedPlayer)
+      return nextPlayers
+    })
+  }
+
   const startGame = () => {
     if (!canStart) {
       return
@@ -117,6 +136,7 @@ function App() {
         onPlayerNameChange={setPlayerName}
         onAddPlayer={addPlayer}
         onRemovePlayer={removePlayer}
+        onReorderPlayers={reorderPlayers}
         onStartGame={startGame}
       />
     )

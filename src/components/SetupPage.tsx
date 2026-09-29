@@ -1,5 +1,5 @@
-import { FormEvent } from 'react'
-import { Plus, X } from 'lucide-react'
+import { DragEvent, FormEvent, useState } from 'react'
+import { ArrowDown, ArrowUp, GripVertical, Plus, X } from 'lucide-react'
 import type { Player } from '../types'
 
 type SetupPageProps = {
@@ -9,6 +9,7 @@ type SetupPageProps = {
   onPlayerNameChange: (name: string) => void
   onAddPlayer: () => void
   onRemovePlayer: (id: string) => void
+  onReorderPlayers: (fromIndex: number, toIndex: number) => void
   onStartGame: () => void
 }
 
@@ -19,11 +20,46 @@ function SetupPage({
   onPlayerNameChange,
   onAddPlayer,
   onRemovePlayer,
+  onReorderPlayers,
   onStartGame,
 }: SetupPageProps) {
+  const [draggedPlayerId, setDraggedPlayerId] = useState<string | null>(null)
+  const [dragOverPlayerId, setDragOverPlayerId] = useState<string | null>(null)
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     onAddPlayer()
+  }
+
+  const handleDragStart = (event: DragEvent<HTMLLIElement>, playerId: string) => {
+    setDraggedPlayerId(playerId)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', playerId)
+  }
+
+  const handleDragOver = (event: DragEvent<HTMLLIElement>, playerId: string) => {
+    event.preventDefault()
+    setDragOverPlayerId(playerId)
+    event.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = (event: DragEvent<HTMLLIElement>, targetIndex: number) => {
+    event.preventDefault()
+
+    const playerId = event.dataTransfer.getData('text/plain') || draggedPlayerId
+    const fromIndex = players.findIndex((player) => player.id === playerId)
+
+    if (fromIndex !== -1) {
+      onReorderPlayers(fromIndex, targetIndex)
+    }
+
+    setDraggedPlayerId(null)
+    setDragOverPlayerId(null)
+  }
+
+  const resetDragState = () => {
+    setDraggedPlayerId(null)
+    setDragOverPlayerId(null)
   }
 
   return (
@@ -67,9 +103,43 @@ function SetupPage({
           ) : (
             <ul className="setup-player-list">
               {players.map((player, index) => (
-                <li key={player.id}>
+                <li
+                  className={`${draggedPlayerId === player.id ? 'is-dragging' : ''} ${
+                    dragOverPlayerId === player.id && draggedPlayerId !== player.id ? 'is-drag-over' : ''
+                  }`}
+                  key={player.id}
+                  draggable
+                  onDragStart={(event) => handleDragStart(event, player.id)}
+                  onDragOver={(event) => handleDragOver(event, player.id)}
+                  onDragLeave={() => setDragOverPlayerId(null)}
+                  onDrop={(event) => handleDrop(event, index)}
+                  onDragEnd={resetDragState}
+                >
+                  <span className="drag-handle" aria-hidden="true">
+                    <GripVertical size={18} />
+                  </span>
                   <span className="player-index">{index + 1}</span>
-                  <span>{player.name}</span>
+                  <span className="setup-player-name">{player.name}</span>
+                  <div className="order-actions" aria-label={`Change ${player.name} order`}>
+                    <button
+                      type="button"
+                      className="icon-button ghost-button"
+                      onClick={() => onReorderPlayers(index, index - 1)}
+                      disabled={index === 0}
+                      aria-label={`Move ${player.name} up`}
+                    >
+                      <ArrowUp size={16} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button ghost-button"
+                      onClick={() => onReorderPlayers(index, index + 1)}
+                      disabled={index === players.length - 1}
+                      aria-label={`Move ${player.name} down`}
+                    >
+                      <ArrowDown size={16} aria-hidden="true" />
+                    </button>
+                  </div>
                   <button
                     type="button"
                     className="icon-button ghost-button"
